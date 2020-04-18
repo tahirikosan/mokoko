@@ -1,0 +1,224 @@
+
+int greenPin = 8;
+int yellowPin = 2;
+int redPin = 3;
+
+int green2Pin = 4;
+int yellow2Pin = 5;
+int red2Pin = 6;
+
+int trigPin = 9;
+int echoPin = 10;
+
+int a = 11;
+
+
+int button1Pin = 7;
+int button2Pin = 13;
+
+int buzzerPin = 12;
+
+//define variables
+long duration;
+int distance;
+int safetyDistance;
+
+
+// set initial times for lights
+unsigned long greenMillis = 0;
+unsigned long yellowMillis = 0;
+unsigned long redMillis = 0;
+
+//Delay times
+int redDelayStatic = 5000;
+int yellowDelayStatic  = 2000;
+int greenDelayStatic  = 5000;
+
+int redDelay = redDelayStatic;
+int yellowDelay = yellowDelayStatic;
+int greenDelay = greenDelayStatic;
+
+// set the starting status - we set it green
+bool greenStatus = true;
+bool redToYellowStatus = false;
+bool greenToYellowStatus = false;
+bool redStatus = false;
+
+void setup() {
+  // put your setup code here, to run once:
+  pinMode(greenPin, OUTPUT);
+  pinMode(yellowPin, OUTPUT);
+  pinMode(redPin, OUTPUT);
+  pinMode(green2Pin, OUTPUT);
+  pinMode(yellow2Pin, OUTPUT);
+  pinMode(red2Pin, OUTPUT);
+  pinMode(button1Pin, INPUT);
+  pinMode(button2Pin, INPUT);
+  
+  //radar 1
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(a, OUTPUT);
+
+ //buzzer1
+ pinMode(buzzerPin, OUTPUT);
+  
+
+ 
+  digitalWrite(greenPin, HIGH);
+  digitalWrite(red2Pin, HIGH);
+
+  Serial.begin(9600);
+}
+
+
+
+void loop() {
+
+  radar();
+  
+  delay(1);
+  
+  unsigned long currentMillis = millis();
+
+  //Yay butonu 1
+  if(digitalRead(button1Pin) == HIGH && greenStatus == true){
+    delay(15);
+    if(digitalRead(button1Pin) == HIGH && greenStatus == true){
+        if(greenDelay > 3000){
+          
+          digitalWrite(a, HIGH);
+          greenDelay -= 1000;
+          delay(15);
+        }
+    }
+  }
+  //reset yaya buttons
+  digitalWrite(button1Pin, LOW);
+  digitalWrite(button2Pin, LOW);
+ 
+  if(currentMillis - greenMillis >= greenDelay && greenStatus == true){
+    digitalWrite(a, LOW);
+    
+    yellowMillis = millis();
+
+    //1.Lamba
+    digitalWrite(greenPin, LOW);
+    digitalWrite(yellowPin, HIGH);
+    digitalWrite(redPin, LOW); 
+
+    //2.Lamba
+    digitalWrite(green2Pin, LOW);
+    digitalWrite(yellow2Pin, HIGH);
+    digitalWrite(red2Pin, LOW);
+    
+
+    greenStatus = false;
+    greenToYellowStatus = true;
+
+    //reset redDelay
+    greenDelay = greenDelayStatic;
+  }
+
+  if(currentMillis - yellowMillis >= yellowDelay && greenToYellowStatus == true){
+     digitalWrite(a, LOW);
+    redMillis = millis();
+
+     //1.Lamba
+    digitalWrite(greenPin, LOW);
+    digitalWrite(yellowPin, LOW);
+    digitalWrite(redPin, HIGH);
+     
+     //2.Lamba
+    digitalWrite(green2Pin, HIGH);
+    digitalWrite(yellow2Pin, LOW);
+    digitalWrite(red2Pin, LOW);
+    
+    greenToYellowStatus = false;
+    redStatus = true;
+  } 
+
+   //Yay butonu 2
+    if(digitalRead(button2Pin) == HIGH && redStatus == true){
+      delay(15);
+      if(digitalRead(button2Pin) == HIGH && redStatus == true){
+          if(redDelay > 3000){
+             digitalWrite(a, HIGH);
+             redDelay -= 1000;
+            delay(15);
+           // redDelay -= 5000;
+          }
+      }
+    }
+    //reset yaya buttons
+    digitalWrite(button1Pin, LOW);
+    digitalWrite(button2Pin, LOW);
+
+  if(currentMillis - redMillis >= redDelay && redStatus == true){
+     digitalWrite(a, LOW);
+    yellowMillis = millis();
+
+    //1.Lamba
+    digitalWrite(greenPin, LOW);
+    digitalWrite(yellowPin, HIGH);
+    digitalWrite(redPin, LOW);
+
+    //2.Lamba
+    digitalWrite(green2Pin, LOW);
+    digitalWrite(yellow2Pin, HIGH);
+    digitalWrite(red2Pin, LOW);
+
+    redStatus = false;
+    redToYellowStatus = true;
+  }
+
+  if(currentMillis - yellowMillis >= yellowDelay && redToYellowStatus == true){
+     digitalWrite(a, LOW);
+    greenMillis = millis();
+
+     //1.Lamba
+    digitalWrite(greenPin, HIGH);
+    digitalWrite(yellowPin, LOW);
+    digitalWrite(redPin, LOW);
+    
+    //2.Lamba
+    digitalWrite(green2Pin, LOW);
+    digitalWrite(yellow2Pin, LOW);
+    digitalWrite(red2Pin, HIGH);
+
+    redToYellowStatus = false;
+    greenStatus = true;
+  }
+}
+
+
+void radar(){
+  //clears the trig pin
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+
+
+  //sets the trigPin on HIGH for 10 micro seconds
+   digitalWrite(trigPin, HIGH);
+   delayMicroseconds(10);
+   digitalWrite(trigPin, LOW);
+
+   //reads the echoPin, returns the sound wave  travel in microseconds
+   duration = pulseIn(echoPin, HIGH);
+
+   //Calculate distance
+   distance =  duration*0.034/2;
+
+   Serial.println(distance);
+
+   safetyDistance = distance;
+   
+
+   if(safetyDistance <= 5 && redStatus == true){
+     digitalWrite(a, HIGH);
+     tone(buzzerPin, 1000, 500);
+    }else{
+       digitalWrite(a, LOW);
+       noTone(buzzerPin);
+    }
+}
